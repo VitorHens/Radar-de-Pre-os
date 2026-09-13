@@ -44,8 +44,8 @@ Entre os operadores utilizados estão `$unwind`, `$group`, `$min`, `$filter` e `
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/VitorHens/Radar-de-Pre-os.git
-cd Radar-de-Pre-os
+git clone https://github.com/VitorHens/radar-de-precos.git
+cd radar-de-precos
 ```
 
 ### 2. Instale as dependências
