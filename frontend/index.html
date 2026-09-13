@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radar de Preços</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0} body{font-family:system-ui,Arial;background:#f5f5f5;color:#1a1a1a;padding:24px 16px 60px}.wrap{max-width:620px;margin:auto}h1{font-size:22px;margin-bottom:3px}.sub{color:#777;font-size:13px;margin-bottom:20px}.card,.stat{background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:16px}h2{font-size:14px;color:#666;margin-bottom:12px}label{display:block;font-size:12px;color:#666;margin:10px 0 4px}input,select,button{font:inherit;font-size:14px;border:1px solid #ccc;border-radius:6px;padding:9px 10px;width:100%;background:#fff}button{width:auto;cursor:pointer}button:hover{border-color:#777}.primario{background:#1a1a1a;color:#fff;border-color:#1a1a1a}.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.preco{font-size:32px;font-weight:700;margin:10px 0}.meta{font-size:13px;color:#666}.status{display:inline-block;font-size:12px;padding:4px 10px;border-radius:12px;background:#eee;color:#555;margin:8px 0}.ok{background:#e6f4ea;color:#1e7e34}.alerta{background:#fdecea;color:#a13a2a}.stats{display:flex;gap:12px}.stat{flex:1;margin:0}.stat span{font-size:12px;color:#777}.stat strong{display:block;font-size:18px;margin-top:4px}.item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}.msg{font-size:13px;color:#555}@media(max-width:480px){.stats{flex-direction:column}.acoes button{width:100%}}
+</style>
+</head>
+<body><div class="wrap">
+  <h1>Radar de Preços</h1><p class="sub">Monitoramento automático com MongoDB Atlas</p>
+
+  <div class="card">
+    <h2>Produto monitorado</h2>
+    <select id="produtoSelect" onchange="selecionarProduto()"></select>
+    <div class="preco">R$ <span id="preco">--</span></div>
+    <p id="meta" class="meta">Meta: --</p><span id="status" class="status">Selecione um produto</span>
+    <label for="novoPreco">Novo preço manual</label><input type="number" step="0.01" id="novoPreco" placeholder="Ex.: 1349.90">
+    <div class="acoes">
+      <button class="primario" onclick="atualizarPreco()">Atualizar preço</button><button onclick="atualizarPrecoAutomatico()">Buscar neste site</button><button onclick="monitorarAgora()">Verificar todos agora</button><button onclick="mostrarHistorico()">Ver histórico</button><button onclick="verificarMeta()">Verificar meta</button><button onclick="excluirProduto()">Excluir</button>
+    </div>
+  </div>
+
+  <div class="stats"><div class="stat"><span>Menor preço histórico</span><strong id="menor">R$ --</strong></div><div class="stat"><span>Média dos últimos 30 dias</span><strong id="media">R$ --</strong></div></div>
+
+  <div class="card"><h2>Cadastrar novo produto</h2>
+    <label>Nome</label><input id="novoNome" placeholder="Ex.: Fone Bluetooth">
+    <label>URL do produto</label><input id="novaUrl" placeholder="https://...">
+    <label>Preço atual</label><input type="number" step="0.01" id="novoPrecoInicial" placeholder="Ex.: 199.90">
+    <label>Preço-meta para alerta <small>(opcional)</small></label><input type="number" step="0.01" id="precoMeta" placeholder="Ex.: 150.00">
+    <div class="acoes"><button class="primario" onclick="cadastrarProduto()">Cadastrar produto</button></div>
+  </div>
+
+  <div class="card"><h2>Resultado</h2><div id="resultado" class="msg">Selecione um produto acima.</div></div>
+</div>
+<script>
+let produtoAtual=null, produtos=[], metricas=[];
+const dinheiro=v=>"R$ "+Number(v).toFixed(2);
+async function carregarProdutos(manter){const r=await fetch('/produtos'),lista=await r.json();produtos=lista;const s=document.getElementById('produtoSelect');s.innerHTML=lista.map(p=>`<option value="${p.nome}">${p.nome}</option>`).join('');if(!lista.length){mostrarMensagem('Nenhum produto cadastrado.');return}if(manter&&lista.some(p=>p.nome===manter))s.value=manter;await carregarMetricas();selecionarProduto()}
+async function carregarMetricas(){metricas=await (await fetch('/produto')).json()}
+function selecionarProduto(){produtoAtual=document.getElementById('produtoSelect').value;const p=produtos.find(x=>x.nome===produtoAtual),m=metricas.find(x=>x._id===produtoAtual);if(!p)return;document.getElementById('preco').innerText=Number(p.preco).toFixed(2);document.getElementById('meta').innerText=p.preco_meta?`Meta: ${dinheiro(p.preco_meta)}`:'Meta: não definida';document.getElementById('menor').innerText=m?dinheiro(m.menor_preco):'R$ --';document.getElementById('media').innerText=m?dinheiro(m.media_30_dias):'R$ --';atualizarStatus(p)}
+function atualizarStatus(p){const st=document.getElementById('status');if(!p.preco_meta){st.textContent='monitorando';st.className='status';return}const atingida=p.preco<=p.preco_meta;st.textContent=atingida?'meta atingida':'monitorando a meta';st.className=atingida?'status ok':'status'}
+async function cadastrarProduto(){const nome=novoNome.value.trim(),url=novaUrl.value.trim(),preco=parseFloat(novoPrecoInicial.value),meta=parseFloat(precoMeta.value);if(!nome||!url||isNaN(preco)){mostrarMensagem('Preencha nome, URL e preço atual.');return}const d=await (await fetch('/produto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,url,preco,preco_meta:isNaN(meta)?null:meta})})).json();mostrarMensagem(d.mensagem||d.erro);novoNome.value=novaUrl.value=novoPrecoInicial.value=precoMeta.value='';carregarProdutos(nome)}
+async function atualizarPreco(){const preco=parseFloat(novoPreco.value);if(!produtoAtual||isNaN(preco)){mostrarMensagem('Digite um novo preço.');return}const d=await (await fetch(`/produto/${encodeURIComponent(produtoAtual)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({novo_preco:preco})})).json();mostrarMensagem(d.mensagem||d.erro);novoPreco.value='';carregarProdutos(produtoAtual)}
+async function atualizarPrecoAutomatico(){if(!produtoAtual)return;mostrarMensagem('Buscando o preço no site...');const d=await (await fetch(`/produto/${encodeURIComponent(produtoAtual)}/atualizar-automatico`,{method:'PUT'})).json();mostrarMensagem(d.mensagem||d.erro);carregarProdutos(produtoAtual)}
+async function monitorarAgora(){mostrarMensagem('Verificando todos os produtos...');const d=await (await fetch('/monitoramento/agora',{method:'POST'})).json();mostrarMensagem(`${d.atualizados} produto(s) atualizado(s), ${d.alertas} alerta(s) enviado(s).`);carregarProdutos(produtoAtual)}
+async function mostrarHistorico(){if(!produtoAtual)return;const d=await (await fetch(`/historico/${encodeURIComponent(produtoAtual)}`)).json();resultado.innerHTML=d.historico_precos.map(i=>`<div class="item"><span>${new Date(i.data).toLocaleString('pt-BR')}</span><span>${dinheiro(i.preco)}</span></div>`).join('')}
+async function verificarMeta(){if(!produtoAtual)return;const d=await (await fetch(`/meta/${encodeURIComponent(produtoAtual)}`)).json();mostrarMensagem(d.mensagem)}
+async function excluirProduto(){if(!produtoAtual||!confirm(`Excluir ${produtoAtual}?`))return;const d=await (await fetch(`/produto/${encodeURIComponent(produtoAtual)}`,{method:'DELETE'})).json();mostrarMensagem(d.mensagem||d.erro);produtoAtual=null;carregarProdutos()}
+function mostrarMensagem(msg){resultado.innerHTML=`<div class="msg">${msg}</div>`}carregarProdutos();
+</script></body></html>

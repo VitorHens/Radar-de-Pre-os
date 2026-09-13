@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pymongo
+dnspython
+python-dotenv
+requests
+beautifulsoup4
+APScheduler
