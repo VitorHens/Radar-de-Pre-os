@@ -1,19 +1,26 @@
-# Radar de Preços
+# 📡 Radar de Preços
 
-Projeto 1: monitora preços de produtos, registra o histórico no MongoDB Atlas e envia e-mail quando a meta de preço é atingida.
+Sistema web desenvolvido em **Python com FastAPI** para monitorar preços de produtos na internet. A aplicação registra o histórico no MongoDB Atlas, calcula métricas e envia alertas por e-mail quando a meta de preço é atingida.
 
-## Como rodar
+## 🚀 Funcionalidades
 
-1. Instale as bibliotecas: `python -m pip install -r requirements.txt`
-2. Crie um arquivo chamado `.env` na pasta do projeto. Copie os nomes das variáveis de `.env.example` e coloque seus próprios dados.
-3. Inicie a API: `python -m uvicorn main:app --reload`
-4. Abra `http://127.0.0.1:8000/site/` no navegador.
+- Cadastro de produtos para monitoramento
+- Web scraping com Requests e BeautifulSoup
+- Histórico de preços no MongoDB Atlas
+- Menor preço histórico
+- Média dos últimos 30 dias
+- Meta de preço por produto
+- Alertas automáticos por e-mail
+- Verificação automática em intervalos programados
 
-## Requisitos atendidos
+## 🛠️ Tecnologias
 
-- Histórico de preços em subdocumentos (`historico_precos`).
-- Pipeline com `$unwind`, `$group`, `$min`, `$filter` e `$avg`.
-- Menor preço histórico e média dos últimos 30 dias.
-- Scraping com `requests` e `BeautifulSoup`.
-- Verificação automática a cada 30 minutos (altere `INTERVALO_MINUTOS` no `.env` para testar mais rápido).
-- Alerta por e-mail quando o preço for menor ou igual ao preço-meta.
+Python • FastAPI • MongoDB Atlas • PyMongo • Requests • BeautifulSoup • APScheduler • HTML • CSS • JavaScript
+
+## 📊 Banco de dados
+
+O projeto utiliza pipelines de agregação do MongoDB para gerar estatísticas sobre o histórico de preços.
+
+---
+
+Desenvolvido por **Vitor Hens**.
